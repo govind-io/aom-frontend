@@ -6,10 +6,11 @@ import { LOG_IN_REQ } from "../../Types/Users/AuthType";
 function* LogInUserSaga({ data }) {
   let apiConfig = {
     method: "POST",
-    url: "/user/signin",
+    url: "user/auth/signin",
     data: data.data,
   };
-  let response = yield UnsecureApiHandler(apiConfig, true, "Login Req");
+
+  let response = yield call(UnsecureApiHandler, apiConfig, true, "Login Req");
 
   if (!response.res || !response.success) {
     return yield data.onFailed(response.message);
@@ -20,4 +21,4 @@ function* LogInUserSaga({ data }) {
   return yield put(SaveUserData(response.data));
 }
 
-export const userAuthSaga = all([takeLatest(LogInUserSaga, LOG_IN_REQ)]);
+export const userAuthSaga = all([takeLatest(LOG_IN_REQ, LogInUserSaga)]);

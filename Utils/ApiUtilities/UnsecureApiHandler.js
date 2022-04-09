@@ -1,7 +1,9 @@
 import axios from "axios";
+import { API_BASE_URL } from "../Configs/ApiConfigs";
 import ToastHandler from "../Toast/ToastHandler";
 
 export const UnsecureApiHandler = async (apiConfig, alert, alertMessage) => {
+  apiConfig.url = `${API_BASE_URL}/${apiConfig.url}`;
   let data;
   try {
     data = await axios(apiConfig);

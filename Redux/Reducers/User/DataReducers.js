@@ -1,17 +1,18 @@
+import { HYDRATE } from "next-redux-wrapper";
 import { DELETE_USER_DATA, SAVE_USER_DATA } from "../../Types/Users/DataTypes";
 
-const intialState = {
-  data: {},
-};
+const intialState = {};
 
 export const DataReducer = (state = intialState, action) => {
   const data = action.data;
 
   switch (action.type) {
     case SAVE_USER_DATA: {
-      return { ...state, data };
+      return { ...state, ...data };
     }
-
+    case HYDRATE: {
+      return { ...state, ...data };
+    }
     case DELETE_USER_DATA: {
       return intialState;
     }

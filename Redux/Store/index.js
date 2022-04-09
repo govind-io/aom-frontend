@@ -1,3 +1,4 @@
+import { createWrapper } from "next-redux-wrapper";
 import { createStore, applyMiddleware } from "redux";
 import logger from "redux-logger";
 import createSagaMiddleware from "redux-saga";
@@ -6,33 +7,40 @@ import rootSaga from "../Saga";
 const sagaMiddleware = createSagaMiddleware();
 const middlewares = [logger, sagaMiddleware];
 
-function saveToLocalStorage(state) {
-  try {
-    const serialState = JSON.stringify(state);
-    localStorage.setItem("persistState", serialState);
-  } catch (e) {
-    console.warn(e);
-  }
-}
+// function saveToLocalStorage(state) {
+//   try {
+//     const serialState = JSON.stringify(state);
+//     localStorage.setItem("persistState", serialState);
+//   } catch (e) {
+//     console.warn(e);
+//   }
+// }
 
-function loadFromLocalStorage() {
-  try {
-    const serialState = localStorage.getItem("persistState");
-    if (serialState === null) return undefined;
-    return JSON.parse(serialState);
-  } catch (e) {
-    console.warn(e);
-    return undefined;
-  }
-}
+// function loadFromLocalStorage() {
+//   if (!localStorage) return undefined;
+//   try {
+//     const serialState = localStorage.getItem("persistState");
+//     if (serialState === null) return undefined;
+//     return JSON.parse(serialState);
+//   } catch (e) {
+//     console.warn(e);
+//     return undefined;
+//   }
+// }
 
-const store = createStore(
-  rootReducer,
-  loadFromLocalStorage(),
-  applyMiddleware(...middlewares)
-);
+const makeStore = () => {
+  const store = createStore(rootReducer, applyMiddleware(...middlewares));
 
-sagaMiddleware.run(rootSaga);
-store.subscribe(() => saveToLocalStorage(store.getState()));
+  store.sagaTask = sagaMiddleware.run(rootSaga);
 
-export default store;
+  // if (localStorage) {
+  //   store.subscribe(() => saveToLocalStorage(store.getState()));
+  //   console.log("subscribed to store");
+  // }
+
+  return store;
+};
+
+export const wrapper = createWrapper(makeStore);
+
+export default wrapper;

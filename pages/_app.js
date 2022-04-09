@@ -1,12 +1,15 @@
-import { Provider } from "react-redux";
 import { ToastContainer } from "react-toastify";
-import store from "../Redux/Store";
+import wrapper from "../Redux/Store";
+import styles from "../styles/global.css";
 function MyApp({ Component, pageProps }) {
   return (
-    <>
-      <Provider store={store}>
-        <Component {...pageProps} />
-      </Provider>
+    <div
+      style={{
+        height: "100vh",
+        scrollY: "auto",
+      }}
+    >
+      <Component {...pageProps} />
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -18,8 +21,8 @@ function MyApp({ Component, pageProps }) {
         draggable
         pauseOnHover
       />
-    </>
+    </div>
   );
 }
 
-export default MyApp;
+export default wrapper.withRedux(MyApp);

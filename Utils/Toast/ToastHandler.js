@@ -1,3 +1,5 @@
+import { toast } from "react-toastify";
+
 export default function ToastHandler(stat, mess) {
   /*capitalizing first letter of each word of the message*/
   const arr = mess.split(" ");
