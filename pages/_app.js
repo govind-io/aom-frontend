@@ -1,6 +1,7 @@
 import { ToastContainer } from "react-toastify";
-import wrapper from "../Redux/Store";
 import styles from "../styles/global.css";
+import "react-toastify/dist/ReactToastify.css";
+import { wrapper } from "../Redux/Store";
 function MyApp({ Component, pageProps }) {
   return (
     <div

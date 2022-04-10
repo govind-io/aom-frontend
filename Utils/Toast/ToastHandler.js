@@ -7,7 +7,6 @@ export default function ToastHandler(stat, mess) {
     arr[i] = arr[i].charAt(0).toUpperCase() + arr[i].slice(1);
   }
   const message = arr.join(" ");
-
   if (stat === "warn") {
     toast.warn(message);
   } else if (stat === "sus") {

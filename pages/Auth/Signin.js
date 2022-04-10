@@ -1,9 +1,11 @@
-import { Grid, Input } from "@mui/material";
+import { Grid } from "@mui/material";
 import LoadingButton from "@mui/lab/LoadingButton";
 import Head from "next/head";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { LogInUser } from "../../Redux/Actions/User/AuthAction";
+import { DesignForms, SigninForm } from "../../Utils/DesignUtilities/Form";
+import { useRouter } from "next/router";
 
 export default function Signin() {
   //constant utils here
@@ -13,20 +15,30 @@ export default function Signin() {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  //router defined here
+  const router = useRouter();
+
   const loginuser = (e) => {
     e.preventDefault();
+    const email = e.target.username.value;
+    const password = e.target.password.value;
+
+    if (email === "" || password === "") {
+      return setError(true);
+    }
+
     const data = {
       data: {
-        email: e.target.username.value,
-        password: e.target.password.value,
+        email,
+        password,
       },
       onFailed: (message) => {
         setError(true);
         setLoading(false);
       },
       onSuccess: (data) => {
-        console.log(data);
         setLoading(false);
+        router.push("/welcome");
       },
     };
 
@@ -66,21 +78,7 @@ export default function Signin() {
             }}
             onSubmit={loginuser}
           >
-            <Input
-              placeholder="Username"
-              fullWidth
-              name="username"
-              error={error}
-            />
-            <Input
-              placeholder="Password"
-              fullWidth
-              style={{
-                marginTop: "30px",
-              }}
-              name="password"
-              error={error}
-            />
+            {DesignForms(SigninForm, error)}
             <LoadingButton
               type="submit"
               variant="contained"

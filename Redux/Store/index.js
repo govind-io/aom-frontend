@@ -4,8 +4,6 @@ import logger from "redux-logger";
 import createSagaMiddleware from "redux-saga";
 import { rootReducer } from "../Reducers";
 import rootSaga from "../Saga";
-const sagaMiddleware = createSagaMiddleware();
-const middlewares = [logger, sagaMiddleware];
 
 // function saveToLocalStorage(state) {
 //   try {
@@ -29,6 +27,9 @@ const middlewares = [logger, sagaMiddleware];
 // }
 
 const makeStore = () => {
+  const sagaMiddleware = createSagaMiddleware();
+  const middlewares = [logger, sagaMiddleware];
+
   const store = createStore(rootReducer, applyMiddleware(...middlewares));
 
   store.sagaTask = sagaMiddleware.run(rootSaga);
@@ -42,5 +43,3 @@ const makeStore = () => {
 };
 
 export const wrapper = createWrapper(makeStore);
-
-export default wrapper;

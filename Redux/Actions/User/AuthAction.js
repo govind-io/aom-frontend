@@ -1,4 +1,8 @@
-import { LOG_IN_REQ, LOG_OUT_REQ } from "../../Types/Users/AuthType";
+import {
+  LOG_IN_REQ,
+  LOG_OUT_REQ,
+  SIGN_UP_USER,
+} from "../../Types/Users/AuthType";
 
 export const LogInUser = (data) => ({
   data,
@@ -8,4 +12,9 @@ export const LogInUser = (data) => ({
 export const LogOutUser = (data) => ({
   data,
   type: LOG_OUT_REQ,
+});
+
+export const SignUpUser = (data) => ({
+  data,
+  type: SIGN_UP_USER,
 });
