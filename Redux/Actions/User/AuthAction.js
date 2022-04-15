@@ -1,6 +1,7 @@
 import {
   LOG_IN_REQ,
   LOG_OUT_REQ,
+  LOG_OUT_SESSION,
   SIGN_UP_USER,
 } from "../../Types/Users/AuthType";
 
@@ -17,4 +18,9 @@ export const LogOutUser = (data) => ({
 export const SignUpUser = (data) => ({
   data,
   type: SIGN_UP_USER,
+});
+
+export const LogOutSession = (data) => ({
+  data,
+  type: LOG_OUT_SESSION,
 });
