@@ -3,6 +3,7 @@ import { Grid, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useUserData } from "../../CustomHooks/Profile/useUserData";
 import { LogOutSession, LogOutUser } from "../../Redux/Actions/User/AuthAction";
 
 export default function Header() {
@@ -10,17 +11,9 @@ export default function Header() {
   const dispatch = useDispatch();
   const router = useRouter();
 
-  //selectors here
-  const userDataStore = useSelector((state) => state.user.data);
-
   //all Local state here
-  const [userData, setUserData] = useState({});
+  const [userData, setUserData] = useUserData({});
   const [loading, setLoading] = useState({ session: false, self: false });
-
-  //useEffeects here
-  useEffect(() => {
-    setUserData(userDataStore);
-  }, [userDataStore]);
 
   //Functions here
   const LogoutSession = () => {
