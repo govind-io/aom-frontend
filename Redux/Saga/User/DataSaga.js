@@ -60,12 +60,12 @@ function* GetOTherUserSaga({ data }) {
   );
 
   if (response.logout) {
-    data.onFailed();
+    data.onFailed(response.message);
     return put(DeleteAll());
   }
 
   if (!response.res || !response.success) {
-    return data.onFailed();
+    return data.onFailed(response.message);
   }
 
   return data.onSuccess(response.data);
@@ -78,6 +78,7 @@ function* EditUserSaga({ data }) {
       Authorization: `Bearer ${Tokens.refresh}`,
     },
     url: `user/data`,
+    data: data.data,
   };
 
   let response = yield call(
@@ -88,12 +89,12 @@ function* EditUserSaga({ data }) {
   );
 
   if (response.logout) {
-    data.onFailed();
+    data.onFailed(response.message);
     return put(DeleteAll());
   }
 
   if (!response.res || !response.success) {
-    return data.onFailed();
+    return data.onFailed(response.message);
   }
 
   return data.onSuccess(response.data);

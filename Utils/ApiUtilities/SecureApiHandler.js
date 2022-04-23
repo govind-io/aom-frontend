@@ -55,4 +55,8 @@ export const SecureApiHandler = async (apiConfig, alert, alertMessage) => {
   if (response.status === 401) {
     return await recallApi(apiConfig);
   }
+
+  ToastHandler("warn", response.data.message);
+
+  return { res: true, success: false, messsage: response.data.message };
 };

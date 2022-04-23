@@ -77,3 +77,32 @@ export const SigninForm = [
     helperText: "Please enter your password here",
   },
 ];
+
+export const ProfileForm = [
+  {
+    name: "email",
+    placeholder: "Email",
+    helperText: "Please enter your email here",
+    style: { marginTop: "0px" },
+    type: "email",
+    disabled: true,
+  },
+  {
+    name: "name",
+    placeholder: "Name",
+    helperText: "Please enter your name here",
+    type: "text",
+  },
+  {
+    name: "password",
+    placeholder: "Password",
+    helperText: "Please enter your password here",
+    type: "password",
+  },
+  {
+    name: "cnfpassword",
+    placeholder: "Confirm Password",
+    helperText: "Please enter your password here again",
+    type: "password",
+  },
+];

@@ -68,7 +68,7 @@ export default function Header() {
           }}
           variant="h1"
         >
-          Welcome {userData.user?.name}
+          Welcome {userData?.name}
         </Typography>
       </Grid>
       <Grid
