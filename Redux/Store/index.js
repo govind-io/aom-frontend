@@ -16,11 +16,10 @@ function saveToLocalStorage(state) {
 
 function loadFromLocalStorage() {
   try {
-    console.log("tried local state");
     const serialState = localStorage.getItem("persistState");
-    console.log("got local state");
+
     if (serialState === null) return undefined;
-    console.log("got local storage state as", serialState);
+
     return JSON.parse(serialState);
   } catch (e) {
     console.warn(e);
@@ -42,10 +41,7 @@ const makeStore = () => {
 
   try {
     store.subscribe(() => saveToLocalStorage(store.getState()));
-    console.log("subscribed to store");
-  } catch (e) {
-    console.log("can not sync to localstorage on server");
-  }
+  } catch (e) {}
 
   return store;
 };

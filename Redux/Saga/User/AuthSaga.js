@@ -73,8 +73,6 @@ function* LogOutUserSaga({ data }) {
     "Logged Out succesfully"
   );
 
-  console.log(response, "response is");
-
   if (!response.res || !response.success) {
     if (!data.onFailed) return;
     return data.onFailed(response.message);
@@ -106,7 +104,7 @@ function* ClearSessionsSaga({ data }) {
   if (!response.res || !response.success) {
     return data.onFailed(response.message);
   }
-  console.log(response);
+
   if (response.logout) {
     data.onFailed();
     return yield put(DeleteAll());

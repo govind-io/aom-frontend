@@ -13,7 +13,7 @@ const recallApi = async (apiConfig) => {
 
   if (!getToken.success) {
     ToastHandler("warn", "Login Session expired");
-    return { res: true, success: true, logout: true };
+    return { res: false, success: false, logout: true };
   }
 
   apiConfig.headers = {
@@ -25,7 +25,6 @@ const recallApi = async (apiConfig) => {
 };
 
 export const SecureApiHandler = async (apiConfig, alert, alertMessage) => {
-  console.log("called secure api handler");
   apiConfig.url = `${API_BASE_URL}/${apiConfig.url}`;
 
   let response;

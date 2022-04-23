@@ -20,17 +20,21 @@ function* GetUserSaga({ data }) {
     false,
     "User Data received"
   );
-  console.log(response);
+
   if (!response.res || !response.success) {
+    if (!data.onFailed) return;
     return data.onFailed();
   }
 
   if (response.logout) {
+    if (!data.onFailed) return;
     data.onFailed();
     return put(DeleteAll());
   }
 
   yield put(SaveUserData(response.data));
+
+  if (!data.onSuccess) return;
 
   return data.onSuccess();
 }

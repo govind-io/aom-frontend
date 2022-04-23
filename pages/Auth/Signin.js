@@ -1,8 +1,8 @@
 import { Grid } from "@mui/material";
 import LoadingButton from "@mui/lab/LoadingButton";
 import Head from "next/head";
-import { useState } from "react";
-import { useDispatch } from "react-redux";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { LogInUser } from "../../Redux/Actions/User/AuthAction";
 import { DesignForms, SigninForm } from "../../Utils/DesignUtilities/Form";
 import { useRouter } from "next/router";
@@ -15,8 +15,18 @@ export default function Signin() {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  //selectors here
+  const loggedIn = useSelector((state) => state.user.data.loggedIn);
   //router defined here
   const router = useRouter();
+
+  //useEffects here
+
+  useEffect(() => {
+    if (!loggedIn) return;
+
+    router.push("/welcome");
+  }, []);
 
   const loginuser = (e) => {
     e.preventDefault();
