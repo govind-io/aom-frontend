@@ -3,9 +3,22 @@ import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useEffect } from "react";
+import { useSelector } from "react-redux";
 
 export default function Home() {
   const router = useRouter();
+
+  //selectors here
+  const loggedIn = useSelector((state) => state.user.data.loggedIn);
+
+  //effects here
+
+  useEffect(() => {
+    if (!loggedIn) return;
+
+    router.push("/welcome");
+  }, [loggedIn]);
   return (
     <div>
       <Head>
