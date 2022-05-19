@@ -26,9 +26,9 @@ function* GetUserSaga({ data }) {
   );
 
   if (response.logout) {
+    yield put(DeleteAll());
     if (!data.onFailed) return;
     data.onFailed();
-    return put(DeleteAll());
   }
 
   if (!response.res || !response.success) {
@@ -61,7 +61,7 @@ function* GetOTherUserSaga({ data }) {
 
   if (response.logout) {
     data.onFailed(response.message);
-    return put(DeleteAll());
+    return yield put(DeleteAll());
   }
 
   if (!response.res || !response.success) {
@@ -90,7 +90,7 @@ function* EditUserSaga({ data }) {
 
   if (response.logout) {
     data.onFailed(response.message);
-    return put(DeleteAll());
+    return yield put(DeleteAll());
   }
 
   if (!response.res || !response.success) {
