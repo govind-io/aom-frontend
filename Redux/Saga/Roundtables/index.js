@@ -1,6 +1,7 @@
 import {
   CREATE_ROUNDTABLE,
   GET_ROUNDTABLES_ALL,
+  GET_ROUNDTABLE_DATA,
 } from "../../Types/Users/RoundtableTypes";
 import { all, call, put, takeLatest } from "redux-saga/effects";
 import { Tokens } from "../../../Utils/Configs/ApiConfigs";
@@ -64,7 +65,36 @@ function* CreateRoundtablesSaga({ data }) {
   return data.onSuccess();
 }
 
+function* GetRoundtableSaga({ data }) {
+  let apiConfig = {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${Tokens.refresh}`,
+    },
+    url: `roundtable/${data.data.id}`,
+  };
+
+  let response = yield call(
+    SecureApiHandler,
+    apiConfig,
+    false,
+    "Fetching Roundtable Data"
+  );
+
+  if (response.logout) {
+    yield put(DeleteAll());
+    data.onFailed(response.message);
+  }
+
+  if (!response.res || !response.success) {
+    return data.onFailed(response.message);
+  }
+
+  return data.onSuccess(response.data);
+}
+
 export const roundtableDataSaga = all([
   takeLatest(GET_ROUNDTABLES_ALL, GetAllRoundtablesSaga),
   takeLatest(CREATE_ROUNDTABLE, CreateRoundtablesSaga),
+  takeLatest(GET_ROUNDTABLE_DATA, GetRoundtableSaga),
 ]);

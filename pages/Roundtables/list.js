@@ -23,7 +23,7 @@ function List() {
     setLoading(true);
     const apidata = {
       onSuccess: (data) => {
-        setData(data);
+        setData(data.allRoundtables);
         setLoading(false);
         setError(false);
       },
@@ -69,12 +69,28 @@ function List() {
         </Grid>
       )}
 
-      {data &&
+      {data.length !== 0 &&
         !loading &&
         !error &&
-        data.allRoundtables.map((elem) => {
+        data.map((elem) => {
           return <RoundtableCard item={elem} key={elem._id} />;
         })}
+
+      {data.length === 0 && !loading && !error && (
+        <Grid container>
+          <h1
+            style={{
+              textAlign: "center",
+              fontSize: "34px",
+              fontWeight: "bold",
+              color: "red",
+              width: "100%",
+            }}
+          >
+            No roundtables were found!Be the first one to Create a Roundtable
+          </h1>
+        </Grid>
+      )}
     </>
   );
 }
