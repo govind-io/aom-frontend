@@ -1,5 +1,5 @@
 import { CircularProgress, Grid, Paper, Typography } from "@mui/material";
-import Router, { useRouter } from "next/router";
+import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
 import { WithAuth } from "../../Utils/ComponentUtilities/WithAuth";
 import { useDispatch, useSelector } from "react-redux";
@@ -12,6 +12,7 @@ import ToastHandler from "../../Utils/Toast/ToastHandler";
 import AlertDialog from "../../Components/Roundtables/LiveRt/Confirmation";
 import ChatMain from "../../Components/Roundtables/Chat/chatMain";
 
+import VideoGrid from "../../Components/Roundtables/LiveRt/Video/videoMain";
 function Roundtable() {
   const router = useRouter();
   const { id } = router.query;
@@ -230,7 +231,7 @@ function Roundtable() {
             </Paper>
           </Grid>
           <Grid item xs={6}>
-            {/* <VideoGrid /> */}
+            <VideoGrid />
           </Grid>
           <Grid item xs={3}>
             <ChatMain messages={data.messages} />

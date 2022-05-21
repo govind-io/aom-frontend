@@ -1,9 +1,14 @@
 import { Grid, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
+import { SaveParticipants } from "../../../Redux/Actions/Roundtable";
 import { socket } from "../../../Utils/Configs/Socket";
 
 export default function ParticipantList(props) {
   const [participants, setParticipants] = useState(props.participants);
+
+  //constants here
+  const dispatch = useDispatch();
 
   useEffect(() => {
     if (!socket) return;
@@ -19,6 +24,10 @@ export default function ParticipantList(props) {
       setParticipants((prev) => prev.filter((elem) => elem.id !== user.id));
     });
   }, [socket]);
+
+  useEffect(() => {
+    dispatch(SaveParticipants(participants));
+  }, [participants]);
 
   return (
     <Grid container padding={"20px"} marginTop={"30px"}>
