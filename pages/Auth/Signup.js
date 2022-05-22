@@ -47,7 +47,7 @@ export default function Signup() {
       },
       onSuccess: (data) => {
         setLoading(false);
-        setError(fale);
+        setError(false);
         router.push("/welcome");
       },
     };

@@ -29,6 +29,11 @@ export default function VideoItem({ peer }) {
     videoRef.current.srcObject = remoteStream;
   }, [remoteStream]);
 
+  useEffect(() => {
+    if (participants.find((elem) => elem.socketId === peer.peerId)) return;
+    peer.peer.destroy();
+  }, [participants]);
+
   return (
     <Grid
       item
@@ -80,13 +85,13 @@ export default function VideoItem({ peer }) {
                 alignItems: "center",
               }}
             >
-              {participants.find((elem) => elem.socketId === peer.peerId).name
+              {participants.find((elem) => elem.socketId === peer.peerId)?.name
                 .length > 12
                 ? participants
                     .find((elem) => elem.socketId === peer.peerId)
-                    .name.substring(0, 9) + "..."
+                    ?.name.substring(0, 9) + "..."
                 : participants.find((elem) => elem.socketId === peer.peerId)
-                    .name}{" "}
+                    ?.name}{" "}
             </Typography>
           </Box>
         </div>

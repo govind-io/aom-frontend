@@ -15,7 +15,7 @@ export default function AlertDialog({ open, setOpen, reqUser }) {
   return (
     <Dialog open={open} onClose={handleClose}>
       <DialogTitle id="alert-dialog-title">
-        Accept {reqUser?.name}&aposs Join Request
+        Accept {reqUser?.name} Join Request
       </DialogTitle>
       <DialogContent>
         <DialogContentText id="alert-dialog-description">

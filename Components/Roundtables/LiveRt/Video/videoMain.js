@@ -34,7 +34,7 @@ export default function VideoGrid() {
   const peersRef = useRef();
   const selfVideo = useRef();
   const streamRef = useRef();
-  participantsRef.current = [];
+  participantsRef.current = participants;
   peersRef.current = peers;
   streamRef.current = selfStream;
 
@@ -73,6 +73,17 @@ export default function VideoGrid() {
       socket.emit("sending-signal", { callerId, idToCall, signal });
     });
 
+    peer.on("close", () => {
+      const temp = peersRef.current.filter((elem) => {
+        return elem.peerId !== callerId;
+      });
+
+      setpeers([...temp]);
+    });
+
+    peer.on("error", (err) => {
+      console.log("errors is", err, err.message);
+    });
     return peer;
   };
 
@@ -99,6 +110,17 @@ export default function VideoGrid() {
           return elem;
         });
       });
+    });
+
+    peer.on("close", () => {
+      const temp = peersRef.current.filter((elem) => {
+        return elem.peerId !== callerId;
+      });
+      setpeers([...temp]);
+    });
+
+    peer.on("error", (err) => {
+      console.log("errors is", err, err.message);
     });
 
     return peer;
