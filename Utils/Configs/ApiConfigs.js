@@ -1,6 +1,4 @@
-export const API_BASE_URL = `http://${
-  typeof window !== "undefined" ? location.hostname : ""
-}:3001`;
+export const API_BASE_URL = "https://live-rt-backend.herokuapp.com";
 export var Tokens = {
   refresh: "",
   access: "",
