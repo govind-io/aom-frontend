@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { GetRoundtables } from "../../Redux/Actions/Roundtable";
 import ParticipantList from "../../Components/Roundtables/LiveRt/ParticipantList";
 import { io } from "socket.io-client";
-import { Tokens } from "../../Utils/Configs/ApiConfigs";
+import { API_BASE_URL, Tokens } from "../../Utils/Configs/ApiConfigs";
 import { socket, setSocket } from "../../Utils/Configs/Socket";
 import ToastHandler from "../../Utils/Toast/ToastHandler";
 import AlertDialog from "../../Components/Roundtables/LiveRt/Confirmation";
@@ -65,7 +65,7 @@ function Roundtable() {
     if (!data?.moderator) return;
     setisModerator(data.moderator[0]?.id === user_id);
 
-    const temp = io("http://127.0.0.1:3001/", {
+    const temp = io(API_BASE_URL, {
       query: {
         user_id,
         roundtable_id: id,

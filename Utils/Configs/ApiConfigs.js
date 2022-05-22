@@ -1,4 +1,6 @@
-export const API_BASE_URL = "http://127.0.0.1:3001";
+export const API_BASE_URL = `http://${
+  typeof window !== "undefined" ? location.hostname : ""
+}:3001`;
 export var Tokens = {
   refresh: "",
   access: "",
