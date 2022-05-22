@@ -22,7 +22,7 @@ function User() {
     return ProfileForm.map((elem) => {
       if (elem.name.includes("password")) return;
       return (
-        <Grid container justifyContent="center">
+        <Grid container justifyContent="center" key={elem}>
           <Grid
             item
             xs={12}
