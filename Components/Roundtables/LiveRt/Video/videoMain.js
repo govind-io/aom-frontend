@@ -55,7 +55,13 @@ export default function VideoGrid() {
       setAudioTrack(selfVideoStream.getAudioTracks()[0]);
       setVideoTrack(selfVideoStream.getVideoTracks()[0]);
 
-      setTrackState({ audio: true, video: true });
+      setTrackState({
+        audio: true,
+        video: {
+          width: 320,
+          height: 240,
+        },
+      });
     } catch (e) {
       ToastHandler("err", `Error Loading audio and video ${e.message}`);
       router.push("/Roundtables/list");
@@ -282,9 +288,9 @@ export default function VideoGrid() {
                   height: "fit-content",
                 }}
               >
-                {me.name.length > 12
+                {me.name?.length > 12
                   ? me.name.substring(0, 9) + "..."
-                  : me.name}{" "}
+                  : me.name}
               </Typography>
             </Box>
           </div>
