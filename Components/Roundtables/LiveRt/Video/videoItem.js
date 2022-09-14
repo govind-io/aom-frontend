@@ -7,8 +7,6 @@ export default function VideoItem({ videoTrack }) {
     if (!videoTrack) return;
 
     videoRef.current.srcObject = videoTrack;
-
-    videoRef.current.play();
   }, [videoTrack]);
 
   return (
@@ -19,6 +17,8 @@ export default function VideoItem({ videoTrack }) {
         height: "100%",
         objectFit: "containe",
       }}
+      muted={true}
+      autoPlay={true}
     ></video>
   );
 }
