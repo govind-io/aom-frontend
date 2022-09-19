@@ -96,7 +96,7 @@ function Roundtable() {
     };
 
     const connect = () => {
-      console.log("connected to the serve succesfully", socket.id);
+      console.log("connected to the server succesfully", socket.id);
     };
 
     const connected = () => {
@@ -134,7 +134,20 @@ function Roundtable() {
 
     socket.on("disconnect", disconnect);
 
-    if (!isModerator) return;
+    if (!isModerator)
+      return () => {
+        socket.off("connect_error", connectError);
+
+        socket.off("connect", connect);
+
+        socket.off("connected", connected);
+
+        socket.off("accepted", accepted);
+
+        socket.off("rejected", rejected);
+
+        socket.off("disconnect", disconnect);
+      };
 
     const joinReq = (data) => {
       setOpen(true);
@@ -144,18 +157,6 @@ function Roundtable() {
     socket.on("join-req", joinReq);
 
     return () => {
-      socket.off("connect_error", connectError);
-
-      socket.off("connect", connect);
-
-      socket.off("connected", connected);
-
-      socket.off("accepted", accepted);
-
-      socket.off("rejected", rejected);
-
-      socket.off("disconnect", disconnect);
-
       socket.off("join-req", joinReq);
     };
   }, [socket, isModerator, updatedSocket]);

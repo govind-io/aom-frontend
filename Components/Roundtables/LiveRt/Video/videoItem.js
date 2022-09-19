@@ -1,13 +1,13 @@
 import { useEffect, useRef } from "react";
 
-export default function VideoItem({ videoTrack }) {
+export default function VideoItem({ videoTrack, muted, totalReceivingPeer }) {
   const videoRef = useRef();
 
   useEffect(() => {
     if (!videoTrack) return;
 
     videoRef.current.srcObject = videoTrack;
-  }, [videoTrack]);
+  }, [videoTrack, totalReceivingPeer]);
 
   return (
     <video
@@ -17,7 +17,7 @@ export default function VideoItem({ videoTrack }) {
         height: "100%",
         objectFit: "containe",
       }}
-      muted={true}
+      muted={muted}
       autoPlay={true}
     ></video>
   );

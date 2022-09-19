@@ -6,6 +6,7 @@ import VideocamOffIcon from "@mui/icons-material/VideocamOff";
 import VideocamIcon from "@mui/icons-material/Videocam";
 import MicOffIcon from "@mui/icons-material/MicOff";
 import MicIcon from "@mui/icons-material/Mic";
+import { useSelector } from "react-redux";
 
 export default function VideoGrid() {
   //states here
@@ -13,6 +14,17 @@ export default function VideoGrid() {
   const [videoStatus, setVideoStatus] = useState(true);
   const [audioStatus, setAudioStatus] = useState(true);
   const [localSenderPeer, setLocalSenderPeer] = useState();
+  const [remoteRecieverPeer, setRemoteRecievedPeer] = useState([]);
+  const participants = useSelector((state) => {
+    return state.roundtable.participants;
+  });
+  const userId = useSelector((state) => state.user.data.user);
+
+  //to stop intial peer connecting from firing twice
+  const [intialised, setInitialised] = useState(false);
+
+  //to rerender once the receiving peer connection is established
+  const [totalReceivingPeer, setTotalRecevingPeer] = useState(0);
 
   //sender configs
   const configuration = {
@@ -81,10 +93,89 @@ export default function VideoGrid() {
     socket.on("addIceCandidateAnswer", onIceCandidateAnswer);
   };
 
-  const ViewStreamFromServer = async () => {
-    const peerConnection = new RTCPeerConnection(configuration);
+  const ViewStreamFromServer = async (uid) => {
+    const remoteUsers = participants.filter((elem) => {
+      if (uid) {
+        return uid === elem.id;
+      } else {
+        return elem.id !== userId._id;
+      }
+    });
+
+    remoteUsers.forEach(async (elem) => {
+      const peerConnection = new RTCPeerConnection(configuration);
+
+      //socket event functions
+      const onAnswer = async ({ answer, userId }) => {
+        if (userId !== elem.id) return;
+        const remoteDesc = new RTCSessionDescription(answer);
+
+        await peerConnection.setRemoteDescription(remoteDesc);
+      };
+
+      const onIceCandidateAnswer = async ({ newIceCandidate, userId }) => {
+        if (userId !== elem.id) return;
+        await peerConnection.addIceCandidate(newIceCandidate);
+      };
+
+      //listening for answer by server
+      socket.on("answerViewer", onAnswer);
+
+      //creating an offer for server
+      const offer = await peerConnection.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true,
+      });
+
+      //Setting local peer sdp
+      await peerConnection.setLocalDescription(offer);
+
+      //listening for ice candidate updation and sending that ice candidate to server
+      peerConnection.onicecandidate = (e) => {
+        if (e.candidate) {
+          socket.emit("addIceCandidateViewer", {
+            newIceCandidate: e.candidate,
+            userId: elem.id,
+          });
+        }
+      };
+
+      //listening and checking if peer connected server
+
+      peerConnection.onconnectionstatechange = (e) => {
+        if (peerConnection.connectionState === "connected") {
+          setTotalRecevingPeer((prev) => prev + 1);
+          console.log("connected to rtc server for recieving remote stream ");
+        }
+      };
+
+      peerConnection.ontrack = (e) => {
+        const remoteStream = e.streams[0];
+        setRemoteRecievedPeer((prev) => {
+          const existinguser = prev.find((item) => item.for === elem.id);
+
+          if (existinguser) {
+            return [
+              ...prev.filter((item) => item.for !== elem.id),
+              {
+                ...existinguser,
+                tracks: [...existinguser.tracks, remoteStream],
+              },
+            ];
+          }
+          return [...prev, { for: elem.id, tracks: [remoteStream] }];
+        });
+      };
+
+      //sending created offer to server
+      socket.emit("offerViewer", { offer, userId: elem.id });
+
+      //listening for ice candidate updates for remote peer i.e server
+      socket.on("addIceCandidateAnswerViewer", onIceCandidateAnswer);
+    });
   };
 
+  //starting peer connection to send local streams
   useEffect(() => {
     socket.on("connected", StreamToServer);
 
@@ -95,6 +186,29 @@ export default function VideoGrid() {
     };
   }, []);
 
+  //creating peer connections with all speaker peers to receive there streams for intial
+  useEffect(() => {
+    if (!participants || intialised) return;
+    ViewStreamFromServer();
+    setInitialised(true);
+  }, [participants, intialised]);
+
+  //creating peer to receive speaker stream who joined later then me
+  useEffect(() => {
+    if (!socket) return;
+
+    const userJoinedEvent = (id) => {
+      ViewStreamFromServer(id);
+    };
+
+    socket.on("user-joined", userJoinedEvent);
+
+    return () => {
+      socket.off("user-joined", userJoinedEvent);
+    };
+  }, [socket]);
+
+  //closing localtracks incase of leaving the page
   useEffect(() => {
     if (!localTracks) return;
 
@@ -104,79 +218,113 @@ export default function VideoGrid() {
     };
   }, [localTracks]);
 
+  //closing allPeer connections incase of leaving the page
   useEffect(() => {
     if (!localSenderPeer) return;
 
     return () => {
-      localSenderPeer.close();
+      localSenderPeer?.close();
+      remoteRecieverPeer?.forEach((elem) => {
+        elem.peer.close();
+      });
     };
   }, [localSenderPeer]);
+
+  //closing peer connections with peer who left the rt
+  useEffect(() => {
+    if (!socket) return;
+    socket.on("user-left", async (user) => {
+      setRemoteRecievedPeer((prev) => {
+        return prev.filter((elem) => {
+          if (elem.for === user.id) {
+            elem.peer.close();
+            setTotalRecevingPeer((prev) => prev - 1);
+            return false;
+          }
+          return true;
+        });
+      });
+    });
+  }, [socket]);
 
   return (
     <>
       <Grid container>
-        <Grid
-          item
-          xs={6}
-          sx={{
-            border: "2px solid red",
-            height: "400px",
-            position: "relative",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          {localTracks && videoStatus ? (
-            <VideoItem videoTrack={localTracks} />
-          ) : (
+        <Grid item xs={6}>
+          <Grid
+            item
+            xs={12}
+            sx={{
+              border: "2px solid red",
+              height: "400px",
+              position: "relative",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            {localTracks && videoStatus ? (
+              <VideoItem videoTrack={localTracks} muted={true} />
+            ) : (
+              <div
+                style={{
+                  height: "fit-content",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <VideocamOffIcon style={{ marginRight: "10px" }} /> VideoCam Off
+              </div>
+            )}
             <div
               style={{
-                height: "fit-content",
-                display: "flex",
-                alignItems: "center",
+                position: "absolute",
+                bottom: "0px",
+                right: "0px",
               }}
             >
-              <VideocamOffIcon style={{ marginRight: "10px" }} /> VideoCam Off
+              {audioStatus ? <MicIcon /> : <MicOffIcon />}
             </div>
-          )}
-          <div
-            style={{
-              position: "absolute",
-              bottom: "0px",
-              right: "0px",
+          </Grid>
+          <Grid
+            item
+            xs={12}
+            sx={{
+              display: "flex",
+              justifyContent: "flex-start",
             }}
           >
-            {audioStatus ? <MicIcon /> : <MicOffIcon />}
-          </div>
+            <Button
+              onClick={() => {
+                const videoTrack = localTracks.getVideoTracks()[0];
+                videoTrack.enabled = !videoTrack.enabled;
+                setVideoStatus(videoTrack.enabled);
+              }}
+            >
+              {videoStatus ? <VideocamIcon /> : <VideocamOffIcon />}
+            </Button>
+            <Button
+              onClick={() => {
+                const audioTrack = localTracks.getAudioTracks()[0];
+                audioTrack.enabled = !audioTrack.enabled;
+                setAudioStatus(audioTrack.enabled);
+              }}
+            >
+              {audioStatus ? <MicIcon /> : <MicOffIcon />}
+            </Button>
+          </Grid>
         </Grid>
-        <Grid
-          item
-          xs={12}
-          sx={{
-            display: "flex",
-            justifyContent: "flex-start",
-          }}
-        >
-          <Button
-            onClick={() => {
-              const videoTrack = localTracks.getVideoTracks()[0];
-              videoTrack.enabled = !videoTrack.enabled;
-              setVideoStatus(videoTrack.enabled);
-            }}
-          >
-            {videoStatus ? <VideocamIcon /> : <VideocamOffIcon />}
-          </Button>
-          <Button
-            onClick={() => {
-              const audioTrack = localTracks.getAudioTracks()[0];
-              audioTrack.enabled = !audioTrack.enabled;
-              setAudioStatus(audioTrack.enabled);
-            }}
-          >
-            {audioStatus ? <MicIcon /> : <MicOffIcon />}
-          </Button>
-        </Grid>
+        {remoteRecieverPeer.map((item) => {
+          return (
+            <Grid item xs={6} key={item.for}>
+              <VideoItem
+                videoTrack={item.tracks[0]}
+                muted={false}
+                totalReceivingPeer={totalReceivingPeer}
+              />
+            </Grid>
+          );
+        })}
       </Grid>
     </>
   );
