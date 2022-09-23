@@ -20,15 +20,23 @@ export default function VideoGrid() {
   });
   const userId = useSelector((state) => state.user.data.user);
 
-  //to stop intial peer connecting from firing twice
-  const [intialised, setInitialised] = useState(false);
+  const [initiated, setInitiated] = useState(false);
 
   //to rerender once the receiving peer connection is established
   const [totalReceivingPeer, setTotalRecevingPeer] = useState(0);
 
   //sender configs
   const configuration = {
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    iceServers: [
+      {
+        urls: [
+          "stun:stun.l.google.com:19302",
+          "stun:stun.2.google.com:19302",
+          "stun:stun.3.google.com:19302",
+          "stun:stun.4.google.com:19302",
+        ],
+      },
+    ],
   };
 
   const StreamToServer = async () => {
@@ -53,7 +61,6 @@ export default function VideoGrid() {
     //socket event functions
     const onAnswer = async ({ answer }) => {
       const remoteDesc = new RTCSessionDescription(answer);
-
       await peerConnection.setRemoteDescription(remoteDesc);
     };
 
@@ -83,6 +90,8 @@ export default function VideoGrid() {
     peerConnection.onconnectionstatechange = (e) => {
       if (peerConnection.connectionState === "connected") {
         console.log("connected to rtc server for sending ");
+        socket.off("answer");
+        socket.off("addIceCandidateAnswer");
       }
     };
 
@@ -94,13 +103,11 @@ export default function VideoGrid() {
   };
 
   const ViewStreamFromServer = async (uid) => {
-    const remoteUsers = participants.filter((elem) => {
-      if (uid) {
-        return uid === elem.id;
-      } else {
-        return elem.id !== userId._id;
-      }
-    });
+    const remoteUsers = uid
+      ? [{ id: uid }]
+      : participants.filter((elem) => {
+          return elem.id !== userId._id;
+        });
 
     remoteUsers.forEach(async (elem) => {
       const peerConnection = new RTCPeerConnection(configuration);
@@ -109,12 +116,12 @@ export default function VideoGrid() {
       const onAnswer = async ({ answer, userId }) => {
         if (userId !== elem.id) return;
         const remoteDesc = new RTCSessionDescription(answer);
-
         await peerConnection.setRemoteDescription(remoteDesc);
       };
 
       const onIceCandidateAnswer = async ({ newIceCandidate, userId }) => {
         if (userId !== elem.id) return;
+
         await peerConnection.addIceCandidate(newIceCandidate);
       };
 
@@ -145,6 +152,8 @@ export default function VideoGrid() {
       peerConnection.onconnectionstatechange = (e) => {
         if (peerConnection.connectionState === "connected") {
           setTotalRecevingPeer((prev) => prev + 1);
+          socket.off("answerViewer", onAnswer);
+          socket.off("addIceCandidateAnswerViewer", onIceCandidateAnswer);
           console.log("connected to rtc server for recieving remote stream ");
         }
       };
@@ -159,11 +168,14 @@ export default function VideoGrid() {
               ...prev.filter((item) => item.for !== elem.id),
               {
                 ...existinguser,
-                tracks: [...existinguser.tracks, remoteStream],
+                tracks: [remoteStream],
               },
             ];
           }
-          return [...prev, { for: elem.id, tracks: [remoteStream] }];
+          return [
+            ...prev,
+            { for: elem.id, tracks: [remoteStream], peer: peerConnection },
+          ];
         });
       };
 
@@ -177,36 +189,18 @@ export default function VideoGrid() {
 
   //starting peer connection to send local streams
   useEffect(() => {
-    socket.on("connected", StreamToServer);
-
-    //turning off all listeners
-    return () => {
-      socket.off("connected", StreamToServer);
-      socket.removeAllListeners(["addIceCandidateAnswer", "answer"]);
-    };
-  }, []);
+    if (!socket) return;
+    StreamToServer();
+  }, [socket, userId]);
 
   //creating peer connections with all speaker peers to receive there streams for intial
   useEffect(() => {
-    if (!participants || intialised) return;
+    if (!participants || initiated) return;
+
     ViewStreamFromServer();
-    setInitialised(true);
-  }, [participants, intialised]);
 
-  //creating peer to receive speaker stream who joined later then me
-  useEffect(() => {
-    if (!socket) return;
-
-    const userJoinedEvent = (id) => {
-      ViewStreamFromServer(id);
-    };
-
-    socket.on("user-joined", userJoinedEvent);
-
-    return () => {
-      socket.off("user-joined", userJoinedEvent);
-    };
-  }, [socket]);
+    setInitiated(true);
+  }, [participants]);
 
   //closing localtracks incase of leaving the page
   useEffect(() => {
@@ -230,6 +224,8 @@ export default function VideoGrid() {
     };
   }, [localSenderPeer]);
 
+  console.log(remoteRecieverPeer);
+
   //closing peer connections with peer who left the rt
   useEffect(() => {
     if (!socket) return;
@@ -247,10 +243,31 @@ export default function VideoGrid() {
     });
   }, [socket]);
 
+  //updating peer connections
+
+  useEffect(() => {
+    const userJoined = ({ id }) => {
+      if (id === userId._id) return;
+      ViewStreamFromServer(id);
+    };
+
+    socket.on("user-joined", userJoined);
+
+    return () => {
+      socket.off("user-joined", userJoined);
+    };
+  }, []);
+
   return (
     <>
       <Grid container>
-        <Grid item xs={6}>
+        <Grid
+          item
+          xs={6}
+          // sx={{
+          //   position: "relative",
+          // }}
+        >
           <Grid
             item
             xs={12}
@@ -292,6 +309,9 @@ export default function VideoGrid() {
             sx={{
               display: "flex",
               justifyContent: "flex-start",
+              // position: "absolute",
+              // bottom: "0px",
+              // left: "0px",
             }}
           >
             <Button

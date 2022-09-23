@@ -100,8 +100,6 @@ function Roundtable() {
     };
 
     const connected = () => {
-      console.log("connected to the rt");
-
       ToastHandler("sus", "joined roundtable succesfully");
     };
 
