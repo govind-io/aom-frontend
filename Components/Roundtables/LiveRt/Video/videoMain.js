@@ -1,344 +1,351 @@
-import { Button, Grid, Skeleton, Typography } from "@mui/material";
-import { useSelector } from "react-redux";
-import { useEffect, useRef, useState } from "react";
+import { Button, Grid } from "@mui/material";
+import { useEffect, useState } from "react";
 import { socket } from "../../../../Utils/Configs/Socket";
-import ToastHandler from "../../../../Utils/Toast/ToastHandler";
-import { useRouter } from "next/router";
-import Peer from "simple-peer";
 import VideoItem from "./videoItem";
-import VideocamIcon from "@mui/icons-material/Videocam";
-import KeyboardVoiceIcon from "@mui/icons-material/KeyboardVoice";
-import MicOffIcon from "@mui/icons-material/MicOff";
-import { Box } from "@mui/system";
 import VideocamOffIcon from "@mui/icons-material/VideocamOff";
+import VideocamIcon from "@mui/icons-material/Videocam";
+import MicOffIcon from "@mui/icons-material/MicOff";
+import MicIcon from "@mui/icons-material/Mic";
+import { useSelector } from "react-redux";
+
 export default function VideoGrid() {
-  //selectors here
-  const participants = useSelector((state) => state.roundtable.participants);
-  const me = useSelector((state) => state.user.data.user);
-
-  //constants here
-  const router = useRouter();
-
   //states here
-  const [peers, setpeers] = useState([]);
-  const [selfStream, setSelfStream] = useState();
+  const [localTracks, setLocalTracks] = useState();
+  const [videoStatus, setVideoStatus] = useState(true);
+  const [audioStatus, setAudioStatus] = useState(true);
+  const [localSenderPeer, setLocalSenderPeer] = useState();
+  const [remoteRecieverPeer, setRemoteRecievedPeer] = useState([]);
+  const participants = useSelector((state) => {
+    return state.roundtable.participants;
+  });
+  const userId = useSelector((state) => state.user.data.user);
 
-  //tracks here
-  const [audioTrack, setAudioTrack] = useState();
-  const [videoTrack, setVideoTrack] = useState();
-  const [trackState, setTrackState] = useState({ audio: false, video: false });
+  const [initiated, setInitiated] = useState(false);
 
-  //refs here
-  const initiatedRef = useRef();
-  const participantsRef = useRef();
-  const peersRef = useRef();
-  const selfVideo = useRef();
-  const streamRef = useRef();
-  participantsRef.current = participants;
-  peersRef.current = peers;
-  streamRef.current = selfStream;
+  //to rerender once the receiving peer connection is established
+  const [totalReceivingPeer, setTotalRecevingPeer] = useState(0);
 
-  //checker refs
-  const executionCheckRef = useRef();
-  const executionRef = useRef();
-
-  //handler functions here
-  const func = async () => {
-    try {
-      const selfVideoStream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
-
-      setSelfStream(selfVideoStream);
-
-      setAudioTrack(selfVideoStream.getAudioTracks()[0]);
-      setVideoTrack(selfVideoStream.getVideoTracks()[0]);
-
-      setTrackState({
-        audio: true,
-        video: {
-          width: 320,
-          height: 240,
-        },
-      });
-    } catch (e) {
-      ToastHandler("err", `Error Loading audio and video ${e.message}`);
-      router.push("/Roundtables/list");
-    }
-  };
-
-  const createPeer = (idToCall, callerId, stream) => {
-    const peer = new Peer({
-      initiator: true,
-      trickle: false,
-      stream,
-      config: {
-        iceServers: [
-          { url: "stun:stun01.sipphone.com" },
-          { url: "stun:stun.ekiga.net" },
-          { url: "stun:stun.fwdnet.net" },
-          { url: "stun:stun.ideasip.com" },
-          { url: "stun:stun.iptel.org" },
-          { url: "stun:stun.rixtelecom.se" },
-          { url: "stun:stun.schlund.de" },
-          { url: "stun:stun.l.google.com:19302" },
-          { url: "stun:stun1.l.google.com:19302" },
-          { url: "stun:stun2.l.google.com:19302" },
-          { url: "stun:stun3.l.google.com:19302" },
-          { url: "stun:stun4.l.google.com:19302" },
-          { url: "stun:stunserver.org" },
-          { url: "stun:stun.softjoys.com" },
-          { url: "stun:stun.voiparound.com" },
-          { url: "stun:stun.voipbuster.com" },
-          { url: "stun:stun.voipstunt.com" },
-          { url: "stun:stun.voxgratia.org" },
-          { url: "stun:stun.xten.com" },
-          {
-            url: "turn:numb.viagenie.ca",
-            credential: "muazkh",
-            username: "webrtc@live.com",
-          },
-          {
-            url: "turn:192.158.29.39:3478?transport=udp",
-            credential: "JZEOEt2V3Qb0y27GRntt2u2PAYA=",
-            username: "28224511:1379330808",
-          },
-          {
-            url: "turn:192.158.29.39:3478?transport=tcp",
-            credential: "JZEOEt2V3Qb0y27GRntt2u2PAYA=",
-            username: "28224511:1379330808",
-          },
+  //sender configs
+  const configuration = {
+    iceServers: [
+      {
+        urls: [
+          "stun:stun.l.google.com:19302",
+          "stun:stun.2.google.com:19302",
+          "stun:stun.3.google.com:19302",
+          "stun:stun.4.google.com:19302",
         ],
       },
-    });
-
-    peer.on("signal", (signal) => {
-      socket.emit("sending-signal", { callerId, idToCall, signal });
-    });
-
-    peer.on("close", () => {
-      const temp = peersRef.current.filter((elem) => {
-        return elem.peerId !== callerId;
-      });
-
-      setpeers([...temp]);
-    });
-
-    peer.on("error", (err) => {
-      console.log("errors is", err, err.message);
-    });
-    return peer;
+    ],
   };
 
-  const addPeer = (incomingSignal, callerId, stream) => {
-    const peer = new Peer({
-      initiator: false,
-      trickle: false,
-      stream,
+  const StreamToServer = async () => {
+    //initiating peer
+    const peerConnection = new RTCPeerConnection(configuration);
+
+    setLocalSenderPeer(peerConnection);
+
+    //initialising tracks
+    const localStream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true,
     });
 
-    peer.on("signal", (signal) => {
-      socket.emit("responding-signal", { idToCall: callerId, signal });
+    //adding tracks
+    localStream.getTracks().forEach((track) => {
+      peerConnection.addTrack(track, localStream);
     });
 
-    peer.signal(incomingSignal);
+    setLocalTracks(localStream);
 
-    peer.on("stream", (stream) => {
-      setpeers((prev) => {
-        return prev.map((elem) => {
-          if (elem.peerId === callerId) {
-            elem.stream = stream;
+    //socket event functions
+    const onAnswer = async ({ answer }) => {
+      const remoteDesc = new RTCSessionDescription(answer);
+      await peerConnection.setRemoteDescription(remoteDesc);
+    };
+
+    const onIceCandidateAnswer = async ({ newIceCandidate }) => {
+      await peerConnection.addIceCandidate(newIceCandidate);
+    };
+
+    //listening for answer by server
+    socket.on("answer", onAnswer);
+
+    //creating an offer for server
+    const offer = await peerConnection.createOffer();
+
+    //Setting local peer sdp
+    await peerConnection.setLocalDescription(offer);
+
+    //listening for ice candidate updation and sending that ice candidate to server
+    peerConnection.onicecandidate = (e) => {
+      if (e.candidate) {
+        socket.emit("addIceCandidate", {
+          newIceCandidate: e.candidate,
+        });
+      }
+    };
+
+    //listening and checking if peer connected suvv
+    peerConnection.onconnectionstatechange = (e) => {
+      if (peerConnection.connectionState === "connected") {
+        console.log("connected to rtc server for sending ");
+        socket.off("answer");
+        socket.off("addIceCandidateAnswer");
+      }
+    };
+
+    //sending created offer to server
+    socket.emit("offer", { offer });
+
+    //listening for ice candidate updates for remote peer i.e server
+    socket.on("addIceCandidateAnswer", onIceCandidateAnswer);
+  };
+
+  const ViewStreamFromServer = async (uid) => {
+    const remoteUsers = uid
+      ? [{ id: uid }]
+      : participants.filter((elem) => {
+          return elem.id !== userId._id;
+        });
+
+    remoteUsers.forEach(async (elem) => {
+      const peerConnection = new RTCPeerConnection(configuration);
+
+      //socket event functions
+      const onAnswer = async ({ answer, userId }) => {
+        if (userId !== elem.id) return;
+        const remoteDesc = new RTCSessionDescription(answer);
+        await peerConnection.setRemoteDescription(remoteDesc);
+      };
+
+      const onIceCandidateAnswer = async ({ newIceCandidate, userId }) => {
+        if (userId !== elem.id) return;
+
+        await peerConnection.addIceCandidate(newIceCandidate);
+      };
+
+      //listening for answer by server
+      socket.on("answerViewer", onAnswer);
+
+      //creating an offer for server
+      const offer = await peerConnection.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true,
+      });
+
+      //Setting local peer sdp
+      await peerConnection.setLocalDescription(offer);
+
+      //listening for ice candidate updation and sending that ice candidate to server
+      peerConnection.onicecandidate = (e) => {
+        if (e.candidate) {
+          socket.emit("addIceCandidateViewer", {
+            newIceCandidate: e.candidate,
+            userId: elem.id,
+          });
+        }
+      };
+
+      //listening and checking if peer connected server
+
+      peerConnection.onconnectionstatechange = (e) => {
+        if (peerConnection.connectionState === "connected") {
+          setTotalRecevingPeer((prev) => prev + 1);
+          socket.off("answerViewer", onAnswer);
+          socket.off("addIceCandidateAnswerViewer", onIceCandidateAnswer);
+          console.log("connected to rtc server for recieving remote stream ");
+        }
+      };
+
+      peerConnection.ontrack = (e) => {
+        const remoteStream = e.streams[0];
+        setRemoteRecievedPeer((prev) => {
+          const existinguser = prev.find((item) => item.for === elem.id);
+
+          if (existinguser) {
+            return [
+              ...prev.filter((item) => item.for !== elem.id),
+              {
+                ...existinguser,
+                tracks: [remoteStream],
+              },
+            ];
           }
+          return [
+            ...prev,
+            { for: elem.id, tracks: [remoteStream], peer: peerConnection },
+          ];
+        });
+      };
 
-          return elem;
+      //sending created offer to server
+      socket.emit("offerViewer", { offer, userId: elem.id });
+
+      //listening for ice candidate updates for remote peer i.e server
+      socket.on("addIceCandidateAnswerViewer", onIceCandidateAnswer);
+    });
+  };
+
+  //starting peer connection to send local streams
+  useEffect(() => {
+    if (!socket) return;
+    StreamToServer();
+  }, [socket, userId]);
+
+  //creating peer connections with all speaker peers to receive there streams for intial
+  useEffect(() => {
+    if (!participants || initiated) return;
+
+    ViewStreamFromServer();
+
+    setInitiated(true);
+  }, [participants]);
+
+  //closing localtracks incase of leaving the page
+  useEffect(() => {
+    if (!localTracks) return;
+
+    return () => {
+      localTracks?.getAudioTracks()[0].stop();
+      localTracks?.getVideoTracks()[0].stop();
+    };
+  }, [localTracks]);
+
+  //closing allPeer connections incase of leaving the page
+  useEffect(() => {
+    if (!localSenderPeer) return;
+
+    return () => {
+      localSenderPeer?.close();
+      remoteRecieverPeer?.forEach((elem) => {
+        elem.peer.close();
+      });
+    };
+  }, [localSenderPeer]);
+
+  console.log(remoteRecieverPeer);
+
+  //closing peer connections with peer who left the rt
+  useEffect(() => {
+    if (!socket) return;
+    socket.on("user-left", async (user) => {
+      setRemoteRecievedPeer((prev) => {
+        return prev.filter((elem) => {
+          if (elem.for === user.id) {
+            elem.peer.close();
+            setTotalRecevingPeer((prev) => prev - 1);
+            return false;
+          }
+          return true;
         });
       });
     });
+  }, [socket]);
 
-    peer.on("close", () => {
-      const temp = peersRef.current.filter((elem) => {
-        return elem.peerId !== callerId;
-      });
-      setpeers([...temp]);
-    });
-
-    peer.on("error", (err) => {
-      console.log("errors is", err, err.message);
-    });
-
-    return peer;
-  };
-
-  //effects here
-  useEffect(() => {
-    if (!socket || !participants || !selfStream) return;
-
-    if (executionRef.current) return;
-
-    executionRef.current = true;
-
-    const allPeers = participants
-      .filter((elem) => elem.id !== me._id)
-      .map((elem) => {
-        const peer = createPeer(elem.socketId, socket.id, streamRef.current);
-
-        return { peerId: elem.socketId, peer: peer };
-      });
-
-    setpeers(allPeers);
-  }, [socket, selfStream, participants]);
+  //updating peer connections
 
   useEffect(() => {
-    if (executionCheckRef.current) return;
+    const userJoined = ({ id }) => {
+      if (id === userId._id) return;
+      ViewStreamFromServer(id);
+    };
 
-    executionCheckRef.current = true;
-    socket.on("user-sent-signal", (data) => {
-      const peer = {
-        peerId: data.callerId,
-        peer: addPeer(data.signal, data.callerId, streamRef.current),
-      };
+    socket.on("user-joined", userJoined);
 
-      setpeers((prev) => {
-        return [...prev, peer];
-      });
-    });
-
-    socket.on("user-responded-to-signal", (data) => {
-      const item = peersRef.current.find((p) => p.peerId == data.id);
-      item.peer.signal(data.signal);
-    });
+    return () => {
+      socket.off("user-joined", userJoined);
+    };
   }, []);
 
-  useEffect(() => {
-    if (initiatedRef.current) return;
-
-    initiatedRef.current = true;
-    func();
-  }, [selfVideo.current]);
-
-  useEffect(() => {
-    if (!selfStream) return;
-    return () => {
-      selfStream.getTracks().forEach((track) => track.stop());
-    };
-  }, [selfStream]);
-
-  useEffect(() => {
-    if (!selfVideo.current || !selfStream) return;
-
-    selfVideo.current.srcObject = selfStream;
-  }, [selfStream, selfVideo]);
-
   return (
-    <Grid
-      container
-      style={{
-        overflowY: "auto",
-        maxWidth: "80%",
-        maxHeight: "100%",
-        margin: "auto",
-      }}
-    >
-      <Grid
-        item
-        style={{
-          height: "300px",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          width: participants?.length > 1 ? "50%" : "100%",
-          backgroundColor: "rgb(175 88 88)",
-          padding: "0px 20px",
-        }}
-      >
-        {selfStream ? (
-          <div
-            style={{
+    <>
+      <Grid container>
+        <Grid
+          item
+          xs={6}
+          // sx={{
+          //   position: "relative",
+          // }}
+        >
+          <Grid
+            item
+            xs={12}
+            sx={{
+              border: "2px solid red",
+              height: "400px",
               position: "relative",
-              maxWidth: "100%",
-              height: "290px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
             }}
           >
-            <video
-              style={{
-                width: "100%",
-                objectFit: "contain",
-                height: "100%",
-              }}
-              controls={false}
-              ref={selfVideo}
-              autoPlay={true}
-              muted={true}
-            ></video>
-            <Box
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                width: "100%",
-                position: "absolute",
-                alignItems: "center",
-                bottom: "18px",
-              }}
-            >
-              <span
+            {localTracks && videoStatus ? (
+              <VideoItem videoTrack={localTracks} muted={true} />
+            ) : (
+              <div
                 style={{
-                  padding: "5px",
-                  backgroundColor: "grey",
-                  marginLeft: "10px",
-                  borderRadius: "5px",
-                }}
-              >
-                <Button
-                  onClick={() => {
-                    const track = selfStream.getVideoTracks()[0];
-                    track.enabled = !track.enabled;
-                    setTrackState({ ...trackState, video: track.enabled });
-                  }}
-                  variant="contained"
-                >
-                  {trackState.video ? <VideocamIcon /> : <VideocamOffIcon />}
-                </Button>
-                <Button
-                  onClick={() => {
-                    const track = selfStream.getAudioTracks()[0];
-                    track.enabled = !track.enabled;
-                    setTrackState({ ...trackState, audio: track.enabled });
-                  }}
-                  style={{
-                    marginLeft: "10px",
-                  }}
-                  variant="contained"
-                >
-                  {trackState.audio ? <KeyboardVoiceIcon /> : <MicOffIcon />}
-                </Button>
-              </span>
-              <Typography
-                style={{
-                  backgroundColor: "grey",
-                  borderRadius: "5px",
-                  padding: "5px",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  marginRight: "10px",
+                  height: "fit-content",
                   display: "flex",
                   alignItems: "center",
-                  height: "fit-content",
                 }}
               >
-                {me.name?.length > 12
-                  ? me.name.substring(0, 9) + "..."
-                  : me.name}
-              </Typography>
-            </Box>
-          </div>
-        ) : (
-          <Skeleton width="100%" height="300px" animation="wave" />
-        )}
+                <VideocamOffIcon style={{ marginRight: "10px" }} /> VideoCam Off
+              </div>
+            )}
+            <div
+              style={{
+                position: "absolute",
+                bottom: "0px",
+                right: "0px",
+              }}
+            >
+              {audioStatus ? <MicIcon /> : <MicOffIcon />}
+            </div>
+          </Grid>
+          <Grid
+            item
+            xs={12}
+            sx={{
+              display: "flex",
+              justifyContent: "flex-start",
+              // position: "absolute",
+              // bottom: "0px",
+              // left: "0px",
+            }}
+          >
+            <Button
+              onClick={() => {
+                const videoTrack = localTracks.getVideoTracks()[0];
+                videoTrack.enabled = !videoTrack.enabled;
+                setVideoStatus(videoTrack.enabled);
+              }}
+            >
+              {videoStatus ? <VideocamIcon /> : <VideocamOffIcon />}
+            </Button>
+            <Button
+              onClick={() => {
+                const audioTrack = localTracks.getAudioTracks()[0];
+                audioTrack.enabled = !audioTrack.enabled;
+                setAudioStatus(audioTrack.enabled);
+              }}
+            >
+              {audioStatus ? <MicIcon /> : <MicOffIcon />}
+            </Button>
+          </Grid>
+        </Grid>
+        {remoteRecieverPeer.map((item) => {
+          return (
+            <Grid item xs={6} key={item.for}>
+              <VideoItem
+                videoTrack={item.tracks[0]}
+                muted={false}
+                totalReceivingPeer={totalReceivingPeer}
+              />
+            </Grid>
+          );
+        })}
       </Grid>
-      {peers.map((peer) => {
-        return <VideoItem key={peer.peerId} peer={peer} />;
-      })}
-    </Grid>
+    </>
   );
 }

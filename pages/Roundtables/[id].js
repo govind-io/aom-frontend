@@ -90,45 +90,73 @@ function Roundtable() {
   useEffect(() => {
     if (!socket) return;
 
-    socket.on("connect_error", (err) => {
+    //event handler functions here
+    const connectError = (err) => {
       ToastHandler("err", err.message);
-    });
+    };
 
-    socket.on("connect", () => {
-      console.log("connected to the serve succesfully", socket.id);
-    });
+    const connect = () => {
+      console.log("connected to the server succesfully", socket.id);
+    };
 
-    socket.on("connected", () => {
-      console.log("connected to the rt");
-    });
+    const connected = () => {
+      ToastHandler("sus", "joined roundtable succesfully");
+    };
 
-    socket.on("accepted", () => {
+    const accepted = () => {
       setAccepted(true);
       socket.emit("accepted");
-    });
+    };
 
-    socket.on("rejected", () => {
+    const rejected = () => {
       setRejected(true);
       socket.emit("rejected");
-    });
+    };
 
-    socket.on("disconnect", () => {
+    const disconnect = () => {
       if (acceptedRef.current) {
         ToastHandler("warn", "Roundtable ended or moderator left");
       }
       router.push("/Roundtables/list");
-    });
+    };
 
-    socket.on("connected", () => {
-      ToastHandler("sus", "joined roundtable succesfully");
-    });
+    socket.on("connect_error", connectError);
 
-    if (!isModerator) return;
+    socket.on("connect", connect);
 
-    socket.on("join-req", (data) => {
+    socket.on("connected", connected);
+
+    socket.on("accepted", accepted);
+
+    socket.on("rejected", rejected);
+
+    socket.on("disconnect", disconnect);
+
+    if (!isModerator)
+      return () => {
+        socket.off("connect_error", connectError);
+
+        socket.off("connect", connect);
+
+        socket.off("connected", connected);
+
+        socket.off("accepted", accepted);
+
+        socket.off("rejected", rejected);
+
+        socket.off("disconnect", disconnect);
+      };
+
+    const joinReq = (data) => {
       setOpen(true);
       setReqUser(data);
-    });
+    };
+
+    socket.on("join-req", joinReq);
+
+    return () => {
+      socket.off("join-req", joinReq);
+    };
   }, [socket, isModerator, updatedSocket]);
 
   return (
