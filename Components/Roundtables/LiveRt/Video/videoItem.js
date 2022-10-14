@@ -15,7 +15,8 @@ export default function VideoItem({ videoTrack, muted, totalReceivingPeer }) {
       style={{
         width: "100%",
         height: "100%",
-        objectFit: "containe",
+        objectFit: "contain",
+        objectPosition: "center",
       }}
       muted={muted}
       autoPlay={true}

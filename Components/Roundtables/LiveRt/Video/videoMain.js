@@ -89,7 +89,6 @@ export default function VideoGrid() {
     //listening and checking if peer connected suvv
     peerConnection.onconnectionstatechange = (e) => {
       if (peerConnection.connectionState === "connected") {
-        console.log("connected to rtc server for sending ");
         socket.off("answer");
         socket.off("addIceCandidateAnswer");
       }
@@ -150,6 +149,10 @@ export default function VideoGrid() {
       //listening and checking if peer connected server
 
       peerConnection.onconnectionstatechange = (e) => {
+        console.log(
+          "rtc peer connection state changed ",
+          peerConnection.connectionState
+        );
         if (peerConnection.connectionState === "connected") {
           setTotalRecevingPeer((prev) => prev + 1);
           socket.off("answerViewer", onAnswer);
@@ -248,6 +251,7 @@ export default function VideoGrid() {
   useEffect(() => {
     const userJoined = ({ id }) => {
       if (id === userId._id) return;
+
       ViewStreamFromServer(id);
     };
 
@@ -260,13 +264,16 @@ export default function VideoGrid() {
 
   return (
     <>
-      <Grid container>
+      <Grid container alignItems={"center"}>
         <Grid
           item
           xs={6}
           // sx={{
           //   position: "relative",
           // }}
+          sx={{
+            height: "400px",
+          }}
         >
           <Grid
             item
@@ -336,7 +343,12 @@ export default function VideoGrid() {
         </Grid>
         {remoteRecieverPeer.map((item) => {
           return (
-            <Grid item xs={6} key={item.for}>
+            <Grid
+              item
+              xs={6}
+              key={item.for}
+              sx={{ height: "400px", border: "1px solid green" }}
+            >
               <VideoItem
                 videoTrack={item.tracks[0]}
                 muted={false}

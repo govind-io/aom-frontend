@@ -1,8 +1,8 @@
-//server url
-//export const API_BASE_URL = "http://15.207.59.97";
-
 //local url
-export const API_BASE_URL = "http://localhost:3001";
+//export const API_BASE_URL = "http://localhost:3001";
+
+//server url
+export const API_BASE_URL = "https://stream.khulke.com";
 
 export var Tokens = {
   refresh: "",
